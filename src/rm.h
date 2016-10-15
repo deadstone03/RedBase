@@ -22,12 +22,17 @@
 #include "rm_rid.h"
 #include "pf.h"
 
+const RID INVALID_RID();
+const int INVALID_RECORDSIZE = -1;
 //
 // RM_Record: RM Record interface
 //
 class RM_Record {
 public:
     RM_Record ();
+    
+    RM_Record (RID rid, char* pData, int recordSize);
+    
     ~RM_Record();
 
     // Return the data corresponding to the record.  Sets *pData to the
@@ -36,6 +41,10 @@ public:
 
     // Return the RID associated with the record
     RC GetRid (RID &rid) const;
+private:
+    RID rid;
+    char* pData;
+    int recordSize;
 };
 
 //
@@ -97,5 +106,8 @@ public:
 // Print-error function
 //
 void RM_PrintError(RC rc);
+
+#define RM_RECORD_NOTINIT (RM_RID_LASTWARN + 1)
+#define RM_LASTWARN RM_RECORD_NOTINIT
 
 #endif

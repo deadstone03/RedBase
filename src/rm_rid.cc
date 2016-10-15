@@ -1,14 +1,15 @@
 #includes "rm_rid.h"
 
 RID::RID()
-    : pageNum(INVALID_PAGE), slotNum(INVALID_SLOT) {
-}
+: pageNum(INVALID_PAGE), slotNum(INVALID_SLOT) {}
 
-RID:RID(PageNum pageNum, SlotNum slotNum)
-    : pageNum(pageNum), slotNum(slotNum) {
+RID::RID(PageNum pageNum, SlotNum slotNum)
+: pageNum(pageNum), slotNum(slotNum) {}
 
-}
-RID::~RID()
+RID::RID(const RID& rid)
+: pageNum(rid.pageNum), slotnum(rid.slotNum) {}
+
+RID::~RID() {}
 
 RC RID::GetPageNum(PageNum &pageNum) {
     if (this.pageNum == INVALID_PAGE) {
