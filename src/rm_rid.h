@@ -16,11 +16,12 @@
 // PageNum: uniquely identifies a page in a file
 //
 typedef int PageNum;
-
+#define INVALID_PAGE (-1)
 //
 // SlotNum: uniquely identifies a record in a page
 //
 typedef int SlotNum;
+#define INVALID_SLOT (-1)
 
 //
 // RID: Record id interface
@@ -35,6 +36,16 @@ public:
     RC GetSlotNum(SlotNum &slotNum) const;         // Return slot number
 
 private:
+    PageNum pageNum;
+    SlotNum slotNum;
 };
+
+#define RM_RID_NOTINIT (START_RM_WARN + 0) //RID is not initialized
+#define RM_RID_LASTWARN RM_RID_NOTINIT
+
+//
+// Print-error function
+//
+void RM_RID_PrintError(RC rc);
 
 #endif
