@@ -21,8 +21,9 @@
 #include "redbase.h"
 #include "rm_rid.h"
 #include "pf.h"
+#include "rm_internal.h"
 
-const RID INVALID_RID();
+const RID INVALID_RID;
 const int INVALID_RECORDSIZE = -1;
 //
 // RM_Record: RM Record interface
@@ -66,6 +67,9 @@ public:
     // Forces a page (along with any contents stored in this class)
     // from the buffer pool to disk.  Default value forces all pages.
     RC ForcePages (PageNum pageNum = ALL_PAGES);
+private:
+    RM_FileHdr hdr;
+    PF_FileHandle pffh;
 };
 
 //
@@ -100,6 +104,9 @@ public:
     RC OpenFile   (const char *fileName, RM_FileHandle &fileHandle);
 
     RC CloseFile  (RM_FileHandle &fileHandle);
+
+private:
+    PF_Manager pfm;
 };
 
 //
