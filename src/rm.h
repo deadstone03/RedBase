@@ -29,6 +29,7 @@ const int INVALID_RECORDSIZE = -1;
 // RM_Record: RM Record interface
 //
 class RM_Record {
+  friend class RM_PageHandle;
 public:
     RM_Record ();
     
@@ -115,6 +116,9 @@ private:
 void RM_PrintError(RC rc);
 
 #define RM_RECORD_NOTINIT (RM_RID_LASTWARN + 1)
-#define RM_LASTWARN RM_RECORD_NOTINIT
+#define RM_PAGE_NOTINIT (RM_RID_LASTWARN + 2)
+#define RM_INVALID_SLOTNUM (RM_RID_LASTWARN + 3)
+#define RM_INVALID_SLOT (RM_RID_LASTWARN + 4)
+#define RM_LASTWARN RM_INVALID_SLOT
 
 #endif
