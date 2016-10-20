@@ -23,18 +23,18 @@
 #include "pf.h"
 #include "rm_internal.h"
 
+const PageNum RM_INVALID_PAGE = -1;
 const RID INVALID_RID;
 const int INVALID_RECORDSIZE = -1;
 //
 // RM_Record: RM Record interface
 //
+class RM_PageHandle;
+
 class RM_Record {
   friend class RM_PageHandle;
 public:
-    RM_Record ();
-    
-    RM_Record (RID rid, char* pData, int recordSize);
-    
+    RM_Record();
     ~RM_Record();
 
     // Return the data corresponding to the record.  Sets *pData to the
@@ -47,6 +47,30 @@ private:
     RID rid;
     char* pData;
     int recordSize;
+};
+
+// RM_PageHandle: RM Page interface
+class RM_PageHandle {
+  friend class RM_FileHandle;
+public:
+  RM_PageHandle();
+  ~RM_PageHandle();
+  RC GetPageNum(PageNum &pageNum) const;
+  RC GetRecord(const RID &rid, RM_Record &record) const;
+  RC InsertRecord(const char *pData, RID &rid);
+  RC DeleteRecord(const RID &rid);
+  RC UpdateRecord(const RM_Record &rec);
+private:
+  PageNum pageNum;
+  PF_PageHandle pfph;
+  RM_PageHdr phdr;
+  char* bitmap;
+  char* pData;
+  SlotNum slotsPerPage;
+  int recordSize;
+  int IsValidSlotNum(SlotNum slotNum) const;
+  int IsValidSlot(SlotNum slotNum) const;
+  RC WriteRecord(const char *pData, SlotNum slotNum);
 };
 
 //
@@ -119,6 +143,7 @@ void RM_PrintError(RC rc);
 #define RM_PAGE_NOTINIT (RM_RID_LASTWARN + 2)
 #define RM_INVALID_SLOTNUM (RM_RID_LASTWARN + 3)
 #define RM_INVALID_SLOT (RM_RID_LASTWARN + 4)
-#define RM_LASTWARN RM_INVALID_SLOT
+#define RM_NOSLOT_INPAGE (RM_RID_LASTWARN + 5)
+#define RM_LASTWARN RM_NOSLOT_INPAGE
 
 #endif

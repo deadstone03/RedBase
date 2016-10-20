@@ -16,6 +16,14 @@ bool RID::operator==(const RID &other) const {
      other.pageNum == this->pageNum;
 }
 
+RID& RID::operator=(const RID &other) {
+  if (this != &other) {
+    this->slotNum = other.slotNum;
+    this->pageNum = other.pageNum;
+  }
+  return *this;
+}
+
 RC RID::GetPageNum(PageNum &pageNum) const {
     if (this->pageNum == INVALID_PAGE) {
         return RM_RID_NOTINIT;

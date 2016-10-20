@@ -28,32 +28,6 @@ RC RM_Record::GetRid(RID &rid) const {
     return 0;
 }
 
-RM_FileHandle::RM_FileHandle() {
-    //TODO(xingdai)
-}
-
-RM_FileHandle::~RM_FileHandle() {
-    //TODO(xingdai)
-}
-
-RC RM_FileHandle::GetRec(const RID &rid, RM_Record &rec) const {
-    //TODO(xingdai)
-    PageNum pageNum;
-    SlotNum SlotNum;
-    rid.GetPageNum(pageNum);
-    rid.GetSlotNum(SlotNum);
-
-    PF_PageHandle pfph;
-    
-    pffh.GetThisPage(pageNum, pfph);
-    char *pData;
-    pfph.GetData(pData);
-
-}
-
-RC RM_FileHandle::InsertRec(const char *pData, RID &rid) {
-}
-
 RM_Manager::RM_Manager(PF_Manager &pfm)
 : pfm(pfm) {
 }
