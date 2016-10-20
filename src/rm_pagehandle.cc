@@ -2,9 +2,6 @@
 #include "rm_internal.h"
 #include<cstring>
 
-#define CHAR_BYTE_SIZE (sizeof(char))
-#define CHAR_BIT_SIZE (CHAR_BYTE_SIZE * 8)
-
 RM_PageHandle::RM_PageHandle() {
 }
 
@@ -79,7 +76,7 @@ RC RM_PageHandle::DeleteRecord(const RID &rid) {
   }
   // clear the bit
   bitmap[slotNum / CHAR_BIT_SIZE] &= ~(0x1 << slotNum % CHAR_BIT_SIZE);
-  this->phdr.slotCount--;
+  this->phdr->slotCount--;
   return 0;
 }
 
@@ -113,7 +110,7 @@ RC RM_PageHandle::WriteRecord(const char *pData, const SlotNum slotNum) {
   bitmap[slotNum / CHAR_BIT_SIZE] |= (0x1 << slotNum % CHAR_BIT_SIZE);
   // write the data
   memcpy(this->pData + slotNum * this->recordSize, pData, this->recordSize);
-  this->phdr.slotCount++;
+  this->phdr->slotCount++;
   return 0;
 }
 
@@ -123,4 +120,12 @@ int RM_PageHandle::IsValidSlot(SlotNum slotNum) const {
 
 int RM_PageHandle::IsValidSlotNum(SlotNum slotNum) const {
   return 0 <= slotNum && slotNum < this->slotsPerPage;
+}
+
+int RM_PageHandle::IsPageFull() const {
+  return this->slotsPerPage == this->phdr->slotCount;
+}
+
+int RM_PageHandle::IsPageEmpty() const {
+  return this->phdr->slotCount == 0;
 }

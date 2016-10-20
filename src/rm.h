@@ -23,6 +23,9 @@
 #include "pf.h"
 #include "rm_internal.h"
 
+#define CHAR_BYTE_SIZE (sizeof(char))
+#define CHAR_BIT_SIZE (CHAR_BYTE_SIZE * 8)
+
 const PageNum RM_INVALID_PAGE = -1;
 const RID INVALID_RID;
 const int INVALID_RECORDSIZE = -1;
@@ -62,15 +65,17 @@ public:
   RC UpdateRecord(const RM_Record &rec);
 private:
   PageNum pageNum;
-  PF_PageHandle pfph;
-  RM_PageHdr phdr;
+  RM_PageHdr* phdr;
   char* bitmap;
+  int bitmapLen;
   char* pData;
   SlotNum slotsPerPage;
   int recordSize;
   int IsValidSlotNum(SlotNum slotNum) const;
   int IsValidSlot(SlotNum slotNum) const;
   RC WriteRecord(const char *pData, SlotNum slotNum);
+  int IsPageEmpty() const;
+  int IsPageFull() const;
 };
 
 //
@@ -93,6 +98,9 @@ public:
     // from the buffer pool to disk.  Default value forces all pages.
     RC ForcePages (PageNum pageNum = ALL_PAGES);
 private:
+    RC GetPage(const PageNum &pageNum, RM_PageHandle &pageHandle) const;
+    RC GetPage(const PF_PageHandle &pfPageHandle, RM_PageHandle &pageHandle) const;
+    RC NewPage(RM_PageHandle &pageHandle);
     RM_FileHdr hdr;
     PF_FileHandle pffh;
 };

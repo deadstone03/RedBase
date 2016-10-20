@@ -5,11 +5,14 @@
 
 struct RM_FileHdr {
   int recordSize;
-  SlotNum slotsPerPage;  //num of slots per page
+  PageNum firstFree;
+  PageNum firstData;
+  //SlotNum slotsPerPage;  //num of slots per page
 };
 
 struct RM_PageHdr {
   SlotNum slotCount;  // num of used slots
+  PageNum nextHasFree;  // double link
 };
 
 #endif
