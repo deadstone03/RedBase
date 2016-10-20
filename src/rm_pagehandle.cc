@@ -16,13 +16,7 @@ RC RM_PageHandle::GetPageNum(PageNum &pageNum) const {
   return (0);
 }
 
-RC RM_PageHandle::GetRecord(const RID& rid, RM_Record &record) const {
-
-  RC rc;
-  SlotNum slotNum;
-  if ((rc = rid.GetSlotNum(slotNum))) {
-    return rc;
-  }
+RC RM_PageHandle::GetRecord(const SlotNum& slotNum, RM_Record &record) const {
 
   if (!this->IsValidSlotNum(slotNum)) {
     return RM_INVALID_SLOTNUM;
@@ -36,8 +30,17 @@ RC RM_PageHandle::GetRecord(const RID& rid, RM_Record &record) const {
   // the data will be copied
   record.pData = new char[this->recordSize];
   memcpy(record.pData, this->pData + this->recordSize * slotNum, this->recordSize);
-  record.rid = rid;
+  record.rid = RID(this->pageNum, slotNum);
   return (0);
+}
+
+RC RM_PageHandle::GetNextRecord(const SlotNum &slotNum, RM_Record &record) const {
+  for (SlotNum i = slotNum + 1; this->IsValidSlotNum(i); ++i) {
+    if (this->IsValidSlot(i)) {
+      return this->GetRecord(i, record);
+    }
+  }
+  return RM_PAGE_EOF;
 }
 
 // Insert a new record data, out rid.

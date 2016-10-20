@@ -59,7 +59,7 @@ public:
   RM_PageHandle();
   ~RM_PageHandle();
   RC GetPageNum(PageNum &pageNum) const;
-  RC GetRecord(const RID &rid, RM_Record &record) const;
+  RC GetRecord(const SlotNum &slotNum, RM_Record &record) const;
   RC InsertRecord(const char *pData, RID &rid);
   RC DeleteRecord(const RID &rid);
   RC UpdateRecord(const RM_Record &rec);
@@ -71,6 +71,7 @@ private:
   char* pData;
   SlotNum slotsPerPage;
   int recordSize;
+  RC GetNextRecord(const SlotNum &slotNum, RM_Record &record) const;
   int IsValidSlotNum(SlotNum slotNum) const;
   int IsValidSlot(SlotNum slotNum) const;
   RC WriteRecord(const char *pData, SlotNum slotNum);
@@ -81,7 +82,9 @@ private:
 //
 // RM_FileHandle: RM File interface
 //
+class RM_FileScan;
 class RM_FileHandle {
+  friend class RM_FileScan;
 public:
     RM_FileHandle ();
     ~RM_FileHandle();
@@ -101,6 +104,7 @@ private:
     RC GetPage(const PageNum &pageNum, RM_PageHandle &pageHandle) const;
     RC GetPage(const PF_PageHandle &pfPageHandle, RM_PageHandle &pageHandle) const;
     RC NewPage(RM_PageHandle &pageHandle);
+    RC GetNextRec(const RID &rid, RM_Record &rec) const;
     RM_FileHdr hdr;
     PF_FileHandle pffh;
 };
@@ -122,6 +126,17 @@ public:
                   ClientHint pinHint = NO_HINT); // Initialize a file scan
     RC GetNextRec(RM_Record &rec);               // Get next matching record
     RC CloseScan ();                             // Close the scan
+private:
+    RC CheckRecord(const RM_Record &rec, int &check) const;
+    int Compare(const void* pCond, const void* pVal) const;
+    RM_FileHandle fileHandle;
+    RID curRID;
+    AttrType attrType;
+    int attrLength;
+    int attrOffset;
+    CompOp compOp;
+    void *value;
+    ClientHint pinHint;
 };
 
 //
@@ -152,6 +167,8 @@ void RM_PrintError(RC rc);
 #define RM_INVALID_SLOTNUM (RM_RID_LASTWARN + 3)
 #define RM_INVALID_SLOT (RM_RID_LASTWARN + 4)
 #define RM_NOSLOT_INPAGE (RM_RID_LASTWARN + 5)
-#define RM_LASTWARN RM_NOSLOT_INPAGE
+#define RM_PAGE_EOF (RM_RID_LASTWARN + 6)  // no more records in page
+#define RM_EOF (RM_RID_LASTWARN + 7)  // no more records in file
+#define RM_LASTWARN RM_EOF
 
 #endif

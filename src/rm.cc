@@ -1,33 +1,6 @@
 #include "rm.h"
 #include "rm_internal.h"
 
-RM_Record::RM_Record()
-: rid(INVALID_RID), pData(NULL), recordSize(INVALID_RECORDSIZE) {
-}
-
-RM_Record::RM_Record(RID rid, char* pData, int recordSize)
-: rid(rid), pData(pData), recordSize(recordSize) {
-}
-
-RM_Record::~RM_Record() {
-}
-
-RC RM_Record::GetData(char *&pData) const {
-    if (this->rid == INVALID_RID) {
-        return RM_RECORD_NOTINIT;
-    }
-    pData = this->pData;
-    return 0;
-}
-
-RC RM_Record::GetRid(RID &rid) const {
-    if (this->rid == INVALID_RID) {
-        return RM_RECORD_NOTINIT;
-    }
-    rid = this->rid;
-    return 0;
-}
-
 RM_Manager::RM_Manager(PF_Manager &pfm)
 : pfm(pfm) {
 }

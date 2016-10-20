@@ -14,19 +14,55 @@ RC RM_FileHandle::GetRec(const RID &rid, RM_Record &rec) const {
   RC rc;
   RM_PageHandle pageHandle;
   PageNum pageNum;
+  SlotNum slotNum;
   if ((rc = rid.GetPageNum(pageNum))) {
+    return rc;
+  }
+  if ((rc = rid.GetSlotNum(slotNum))) {
     return rc;
   }
   if ((rc = this->GetPage(pageNum, pageHandle))) {
     return rc;
   }
-  if ((rc = pageHandle.GetRecord(rid, rec))) {
+  if ((rc = pageHandle.GetRecord(slotNum, rec))) {
     return rc;
   }
   if ((rc = this->pffh.UnpinPage(pageNum))) {
     return rc;
   }
   return 0;
+}
+
+RC RM_FileHandle::GetNextRec(const RID &rid, RM_Record &rec) const {
+  PageNum pageNum;
+  SlotNum slotNum;
+  RC rc;
+  if ((rc = rid.GetPageNum(pageNum))) {
+    return rc;
+  }
+  if ((rc = rid.GetSlotNum(slotNum))) {
+    return rc;
+  }
+  PF_PageHandle pfPageHandle;
+  while(!(rc = this->pffh.GetNextPage(pageNum - 1, pfPageHandle))) {
+    RM_PageHandle rmPageHandle;
+    if ((rc = this->GetPage(pfPageHandle, rmPageHandle))) {
+      return rc;
+    }
+    if ((rc = rmPageHandle.GetNextRecord(slotNum, rec)
+         && rc != RM_PAGE_EOF)) {
+      return rc;
+    }
+    if (!rc) {
+      // find one;
+      return 0;
+    }
+    pageNum += 1;
+  }
+  if (rc == PF_EOF) {
+    return RM_EOF;
+  }
+  return rc;
 }
 
 RC RM_FileHandle::InsertRec(const char *pData, RID &rid) {
@@ -112,6 +148,10 @@ RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
     return rc;
   }
   return this->pffh.UnpinPage(pageNum);
+}
+
+RC RM_FileHandle::ForcePages(PageNum pageNum) {
+  return this->pffh.ForcePages(pageNum);
 }
 
 RC RM_FileHandle::GetPage(const PageNum &pageNum, RM_PageHandle& pageHandle) const {
