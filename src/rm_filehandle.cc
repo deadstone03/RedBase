@@ -21,7 +21,7 @@ RC RM_FileHandle::GetRec(const RID &rid, RM_Record &rec) const {
   if ((rc = rid.GetSlotNum(slotNum))) {
     return rc;
   }
-  if ((rc = this->GetPage(pageNum, pageHandle))) {
+  if ((rc = this->GetPage(this->GetRealPageNum(pageNum), pageHandle))) {
     return rc;
   }
   if ((rc = pageHandle.GetRecord(slotNum, rec))) {
@@ -44,7 +44,8 @@ RC RM_FileHandle::GetNextRec(const RID &rid, RM_Record &rec) const {
     return rc;
   }
   PF_PageHandle pfPageHandle;
-  while(!(rc = this->pffh.GetNextPage(pageNum - 1, pfPageHandle))) {
+  while(!(rc = this->pffh.GetNextPage(
+      this->GetRealPageNum(pageNum - 1), pfPageHandle))) {
     RM_PageHandle rmPageHandle;
     if ((rc = this->GetPage(pfPageHandle, rmPageHandle))) {
       return rc;
@@ -80,6 +81,7 @@ RC RM_FileHandle::InsertRec(const char *pData, RID &rid) {
     // insert the new page to the free list
     pageHandle.phdr->nextHasFree = this->hdr.firstFree;
     this->hdr.firstFree = pageHasFree;
+    this->hdrChange = TRUE;
   } else {
     if ((rc = this->GetPage(pageHasFree, pageHandle))) {
       return rc;
@@ -93,6 +95,7 @@ RC RM_FileHandle::InsertRec(const char *pData, RID &rid) {
   if (pageHandle.IsPageFull()) {
     // remove the full page from the has free
     this->hdr.firstFree = pageHandle.phdr->nextHasFree;
+    this->hdrChange = TRUE;
     pageHandle.phdr->nextHasFree = INVALID_PAGE;
   }
   if ((rc = this->pffh.MarkDirty(pageHasFree))) {
@@ -120,6 +123,7 @@ RC RM_FileHandle::DeleteRec(const RID &rid) {
     // insert the page to has free
     pageHandle.phdr->nextHasFree = this->hdr.firstFree;
     this->hdr.firstFree = pageNum;
+    this->hdrChange = TRUE;
   }
   if ((rc = this->pffh.MarkDirty(pageNum))) {
     return rc;
@@ -206,4 +210,9 @@ RC RM_FileHandle::NewPage(RM_PageHandle &pageHandle) {
   pageHandle.phdr->nextHasFree = INVALID_PAGE;
   pageHandle.phdr->slotCount = 0;
   return 0;
+}
+
+// the first page to store record starts from head page + 1
+PageNum RM_FileHandle::GetRealPageNum(const PageNum pageNum) const {
+  return this->hdr.hdrPageNum + 1 + pageNum;
 }

@@ -5,8 +5,8 @@
 
 struct RM_FileHdr {
   int recordSize;
+  PageNum hdrPageNum; // this should always be 0;
   PageNum firstFree;
-  PageNum firstData;
   //SlotNum slotsPerPage;  //num of slots per page
 };
 

@@ -83,8 +83,10 @@ private:
 // RM_FileHandle: RM File interface
 //
 class RM_FileScan;
+class RM_Manager;
 class RM_FileHandle {
   friend class RM_FileScan;
+  friend class RM_Manager;
 public:
     RM_FileHandle ();
     ~RM_FileHandle();
@@ -105,7 +107,9 @@ private:
     RC GetPage(const PF_PageHandle &pfPageHandle, RM_PageHandle &pageHandle) const;
     RC NewPage(RM_PageHandle &pageHandle);
     RC GetNextRec(const RID &rid, RM_Record &rec) const;
+    PageNum GetRealPageNum(const PageNum pageNum) const;
     RM_FileHdr hdr;
+    int hdrChange;
     PF_FileHandle pffh;
 };
 
@@ -154,6 +158,10 @@ public:
     RC CloseFile  (RM_FileHandle &fileHandle);
 
 private:
+    RC GetFileHdr(const PF_FileHandle& pfFileHandle,
+                  RM_FileHdr &rmFileHdr) const;
+    RC WriteFileHdr(const PF_FileHandle& pfFileHandle,
+                    const RM_FileHdr &rmFileHdr) const;
     PF_Manager pfm;
 };
 
