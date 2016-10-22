@@ -62,10 +62,18 @@ private:
 };
 
 // RM_PageHandle: RM Page interface
+// the page is consisted like:
+// rm page head|bitmap|data
 class RM_PageHandle {
   friend class RM_FileHandle;
 public:
   RM_PageHandle();
+  RM_PageHandle(
+      PageNum pageNum, RM_PageHdr* phdr,
+      char* bitmap, int bitmapLen, char* pData,
+      SlotNum slotsPerPage, int recordSize);
+  RM_PageHandle(const RM_PageHandle & other);
+  RM_PageHandle* operator=(const RM_PageHandle &other);
   ~RM_PageHandle();
   RC GetPageNum(PageNum &pageNum) const;
   RC GetRecord(const SlotNum &slotNum, RM_Record &record) const;

@@ -8,6 +8,30 @@ RM_PageHandle::RM_PageHandle() {
 RM_PageHandle::~RM_PageHandle() {
 }
 
+RM_PageHandle::RM_PageHandle(
+      PageNum pageNum, RM_PageHdr* phdr,
+      char* bitmap, int bitmapLen, char* pData,
+      SlotNum slotsPerPage, int recordSize)
+: pageNum(pageNum), phdr(phdr), bitmap(bitmap),
+bitmapLen(bitmapLen), pData(pData), slotsPerPage(slotsPerPage), recordSize(recordSize) {
+}
+
+RM_PageHandle::RM_PageHandle(const RM_PageHandle & other)
+: pageNum(other.pageNum), phdr(other.phdr), bitmap(other.bitmap),
+bitmapLen(other.bitmapLen), pData(other.pData), slotsPerPage(other.slotsPerPage), recordSize(other.recordSize) {
+}
+
+RM_PageHandle* RM_PageHandle::operator=(const RM_PageHandle &other) {
+  this->pageNum = other.pageNum;
+  this->phdr = other.phdr;
+  this->bitmap = other.bitmap;
+  this->bitmapLen = other.bitmapLen;
+  this->pData = other.pData;
+  this->slotsPerPage = other.slotsPerPage;
+  this->recordSize = other.recordSize;
+  return this;
+}
+
 RC RM_PageHandle::GetPageNum(PageNum &pageNum) const {
   if (pageNum == RM_INVALID_PAGE) {
     return RM_PAGE_NOTINIT;
