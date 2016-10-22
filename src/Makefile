@@ -8,20 +8,30 @@
 #
 # Global variables
 #
+GTEST_DIR = ../lib/googletest/googletest
+# All Google Test headers.  Usually you shouldn't change this
+# definition.
+GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
+                $(GTEST_DIR)/include/gtest/internal/*.h
 CC             = g++
 BUILD_DIR      = ../build/
-LIB_DIR        = ../lib/
-INC_DIRS       = -I.
+LIB_DIR        = ../build/lib/
+INC_DIRS       = -I. -I$(GTEST_DIR)/include/
 AR             = ar -rc
 RANLIB         = ranlib
 YACC           = bison -dy
 LEX            = flex
 
+# Flags passed to the preprocessor.
+# Set Google Test's header directory as a system directory, such that
+# the compiler doesn't generate warnings in Google Test headers.
+CPPFLAGS += -isystem $(GTEST_DIR)/include
+
 # -g - Debugging information
 # -O1 - Basic optimization
 # -Wall - All warnings
 # -DDEBUG_PF - This turns on the LOG file for lots of BufferMgr info
-CFLAGS         = -g -O1 -Wall $(STATS_OPTION) $(INC_DIRS)
+CFLAGS         = -g -Wall -pthread $(STATS_OPTION) $(INC_DIRS)
 
 # The STATS_OPTION can be set to -DPF_STATS or to nothing to turn on and
 # off buffer manager statistics.  The student should not modify this
@@ -34,13 +44,42 @@ STATS_OPTION   = -DPF_STATS
 PF_SOURCES     = pf_buffermgr.cc pf_error.cc pf_filehandle.cc \
                  pf_pagehandle.cc pf_hashtable.cc pf_manager.cc \
                  pf_statistics.cc statistics.cc
-RM_SOURCES     =
+RM_SOURCES     = rm_manager.cc rm_filescan.cc rm_filehandle.cc rm_pagehandle.cc \
+								 rm_record.cc rm_rid.cc
 IX_SOURCES     =
 SM_SOURCES     = #sm_stub.cc printer.cc
 QL_SOURCES     = #ql_manager_stub.cc
 UTILS_SOURCES  = #dbcreate.cc dbdestroy.cc redbase.cc
 PARSER_SOURCES = #scan.c parse.c nodes.c interp.c
-TESTER_SOURCES = pf_test1.cc pf_test2.cc pf_test3.cc #rm_test.cc ix_test.cc parser_test.cc
+#TESTER_SOURCES = pf_test1.cc pf_test2.cc pf_test3.cc #rm_test.cc ix_test.cc parser_test.cc
+TESTER_SOURCES = rm_rid_test.cc
+
+# Builds gtest.a and gtest_main.a.
+
+# Usually you shouldn't tweak such internal variables, indicated by a
+# trailing _.
+GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
+# For simplicity and to avoid depending on Google Test's
+# implementation details, the dependencies specified below are
+# conservative and not optimized.  This is fine as Google Test
+# compiles fast and for ordinary users its source rarely changes.
+$(BUILD_DIR)gtest-all.o : $(GTEST_SRCS_)
+	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) $(CFLAGS) -c \
+            $(GTEST_DIR)/src/gtest-all.cc -o $@
+
+$(BUILD_DIR)gtest_main.o : $(GTEST_SRCS_)
+	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) $(CFLAGS) -c \
+            $(GTEST_DIR)/src/gtest_main.cc -o $@
+
+LIBRARY_GTEST = $(LIB_DIR)gtest.a
+$(LIBRARY_GTEST) : $(BUILD_DIR)gtest-all.o
+	$(AR) $@ $^
+	$(RANLIB) $@
+
+LIBRARY_GTEST_MAIN = $(LIB_DIR)gtest_main.a
+$(LIBRARY_GTEST_MAIN) : $(BUILD_DIR)gtest-all.o $(BUILD_DIR)gtest_main.o
+	$(AR) $@ $^
+	$(RANLIB) $@
 
 PF_OBJECTS     = $(addprefix $(BUILD_DIR), $(PF_SOURCES:.cc=.o))
 RM_OBJECTS     = $(addprefix $(BUILD_DIR), $(RM_SOURCES:.cc=.o))
@@ -60,7 +99,8 @@ LIBRARY_IX     = $(LIB_DIR)libix.a
 LIBRARY_SM     = $(LIB_DIR)libsm.a
 LIBRARY_QL     = $(LIB_DIR)libql.a
 LIBRARY_PARSER = $(LIB_DIR)libparser.a
-LIBRARIES      = $(LIBRARY_PF) $(LIBRARY_RM) $(LIBRARY_IX) \
+LIBRARIES      = $(LIBRARY_GTEST_MAIN) \
+								 $(LIBRARY_PF) $(LIBRARY_RM) $(LIBRARY_IX) \
                  $(LIBRARY_SM) $(LIBRARY_QL) $(LIBRARY_PARSER)
 
 UTILS          = $(UTILS_SOURCES:.cc=)
@@ -138,8 +178,8 @@ $(BUILD_DIR)%.d: %.cc
 	 rm -f $@.$$$$
 
 $(OBJECTS): %.o:
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(EXECUTABLES): %: $(BUILD_DIR)%.o $(LIBRARIES)
-	$(CC) $(CFLAGS) $< -o $@ -L$(LIB_DIR) $(LIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -lpthread $^ -o $@ -L$(LIB_DIR)
 

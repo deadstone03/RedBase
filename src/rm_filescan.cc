@@ -108,6 +108,7 @@ int RM_FileScan::Compare(const void* pCond, const void* pVal) const {
         return 0;
       }
   }
+  return 0;
 }
 
 RC RM_FileScan::CloseScan () {
