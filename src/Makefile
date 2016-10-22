@@ -44,8 +44,8 @@ STATS_OPTION   = -DPF_STATS
 PF_SOURCES     = pf_buffermgr.cc pf_error.cc pf_filehandle.cc \
                  pf_pagehandle.cc pf_hashtable.cc pf_manager.cc \
                  pf_statistics.cc statistics.cc
-RM_SOURCES     = rm_manager.cc rm_filescan.cc rm_filehandle.cc rm_pagehandle.cc \
-								 rm_record.cc rm_rid.cc
+RM_SOURCES     = rm_manager.cc rm_filescan.cc rm_filehandle.cc \
+								 rm_pagehandle.cc rm_record.cc rm_rid.cc
 IX_SOURCES     =
 SM_SOURCES     = #sm_stub.cc printer.cc
 QL_SOURCES     = #ql_manager_stub.cc
@@ -71,12 +71,12 @@ $(BUILD_DIR)gtest_main.o : $(GTEST_SRCS_)
 	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) $(CFLAGS) -c \
             $(GTEST_DIR)/src/gtest_main.cc -o $@
 
-LIBRARY_GTEST = $(LIB_DIR)gtest.a
+LIBRARY_GTEST = $(LIB_DIR)libgtest.a
 $(LIBRARY_GTEST) : $(BUILD_DIR)gtest-all.o
 	$(AR) $@ $^
 	$(RANLIB) $@
 
-LIBRARY_GTEST_MAIN = $(LIB_DIR)gtest_main.a
+LIBRARY_GTEST_MAIN = $(LIB_DIR)libgtest_main.a
 $(LIBRARY_GTEST_MAIN) : $(BUILD_DIR)gtest-all.o $(BUILD_DIR)gtest_main.o
 	$(AR) $@ $^
 	$(RANLIB) $@
@@ -99,13 +99,12 @@ LIBRARY_IX     = $(LIB_DIR)libix.a
 LIBRARY_SM     = $(LIB_DIR)libsm.a
 LIBRARY_QL     = $(LIB_DIR)libql.a
 LIBRARY_PARSER = $(LIB_DIR)libparser.a
-LIBRARIES      = $(LIBRARY_GTEST_MAIN) \
-								 $(LIBRARY_PF) $(LIBRARY_RM) $(LIBRARY_IX) \
+LIBRARIES      = $(LIBRARY_PF) $(LIBRARY_RM) $(LIBRARY_IX) \
                  $(LIBRARY_SM) $(LIBRARY_QL) $(LIBRARY_PARSER)
 
 UTILS          = $(UTILS_SOURCES:.cc=)
 TESTS          = $(TESTER_SOURCES:.cc=)
-EXECUTABLES    = $(UTILS) $(TESTS)
+EXECUTABLES    = $(UTILS)
 
 LIBS           = -lparser -lql -lsm -lix -lrm -lpf
 
@@ -115,7 +114,8 @@ LIBS           = -lparser -lql -lsm -lix -lrm -lpf
 all: $(LIBRARIES) $(UTILS)
 
 clean:
-	rm -f $(BUILD_DIR)*.o $(BUILD_DIR)*.d y.output y.tab.h parse.c $(LIBRARIES) $(EXECUTABLES)
+	rm -f $(BUILD_DIR)*.o $(BUILD_DIR)*.d y.output y.tab.h parse.c $(LIBRARIES) \
+	$(LIBRARY_GTEST_MAIN) $(LIBRARY_GTEST) $(EXECUTABLES) $(TEST)
 
 testers: all $(TESTS)
 
@@ -181,5 +181,7 @@ $(OBJECTS): %.o:
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(EXECUTABLES): %: $(BUILD_DIR)%.o $(LIBRARIES)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -lpthread $^ -o $@ -L$(LIB_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -lpthread $< -o $@ -L$(LIB_DIR)
 
+$(TESTS): %: $(BUILD_DIR)%.o $(LIBRARY_GTEST_MAIN) $(LIBRARIES)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -lpthread $^ -o $@ -L$(LIB_DIR)

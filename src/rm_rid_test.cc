@@ -1,8 +1,17 @@
 #include <limits.h>
 #include "gtest/gtest.h"
-#include "rm_rid.h"
+#include "rm.h"
 
 TEST(RIDTest, GetPageNum) {
-  EXPECT_EQ(1, 2);
+  RC rc;
+  PF_Manager pfManager;
+  rc = pfManager.CreateFile(FILE_NAME);
+  EXPECT_EQ(0, rc);
+  PF_FileHandle pfFileHandle;
+  rc = pfManager.OpenFile(FILE_NAME, pfFileHandle);
+  EXPECT_EQ(0, rc);
+  PF_PageHandle pfPageHandle;
+  rc = pfFileHandle.GetFirstPage(pfPageHandle);
+  EXPECT_EQ(0, rc);
 }
 
