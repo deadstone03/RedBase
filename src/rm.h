@@ -34,11 +34,20 @@ const int INVALID_RECORDSIZE = -1;
 //
 class RM_PageHandle;
 
+// rm record
 class RM_Record {
   friend class RM_PageHandle;
 public:
     RM_Record();
+    // will delete the data
     ~RM_Record();
+    // create a Record, use deep copy for data
+    RM_Record(RID rid, char* pData, int recordSize);
+    RM_Record(const RM_Record & other);
+
+    RM_Record* operator=(const RM_Record& other);
+    int operator==(const RM_Record& other) const;
+
 
     // Return the data corresponding to the record.  Sets *pData to the
     // record contents.
