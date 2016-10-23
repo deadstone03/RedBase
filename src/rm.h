@@ -193,7 +193,7 @@ private:
 //
 // Print-error function
 //
-void RM_PrintError(RC rc);
+void RM_PrintError(RC rc, unsigned int line, const char* filename);
 
 #define RM_RECORD_NOTINIT (RM_RID_LASTWARN + 1)
 #define RM_PAGE_NOTINIT (RM_RID_LASTWARN + 2)

@@ -33,7 +33,7 @@ RM_PageHandle* RM_PageHandle::operator=(const RM_PageHandle &other) {
 }
 
 RC RM_PageHandle::GetPageNum(PageNum &pageNum) const {
-  if (pageNum == RM_INVALID_PAGE) {
+  if (this->pageNum == RM_INVALID_PAGE) {
     return RM_PAGE_NOTINIT;
   }
   pageNum = this->pageNum;

@@ -1,6 +1,7 @@
-#include<cstring>
+#include <cstring>
 #include "rm.h"
 #include "rm_internal.h"
+#include <iostream>
 
 RM_FileHandle::RM_FileHandle() {
 }
@@ -39,13 +40,13 @@ RC RM_FileHandle::GetRec(const RID &rid, RM_Record &rec) const {
   if ((rc = rid.GetSlotNum(slotNum))) {
     return rc;
   }
-  if ((rc = this->GetPage(this->GetRealPageNum(pageNum), pageHandle))) {
+  if ((rc = this->GetPage(pageNum, pageHandle))) {
     return rc;
   }
   if ((rc = pageHandle.GetRecord(slotNum, rec))) {
     return rc;
   }
-  if ((rc = this->pffh.UnpinPage(pageNum))) {
+  if ((rc = this->pffh.UnpinPage(this->GetRealPageNum(pageNum)))) {
     return rc;
   }
   return 0;
@@ -72,6 +73,9 @@ RC RM_FileHandle::GetNextRec(const RID &rid, RM_Record &rec) const {
          && rc != RM_PAGE_EOF)) {
       return rc;
     }
+    if ((rc = this->pffh.UnpinPage(this->GetRealPageNum(pageNum)))) {
+      return rc;
+    }
     if (!rc) {
       // find one;
       return 0;
@@ -93,10 +97,13 @@ RC RM_FileHandle::InsertRec(const char *pData, RID &rid) {
   RM_PageHandle pageHandle;
   if (pageHasFree == INVALID_PAGE) {
     // no free page
+    std::cout << "no free page" << std::endl;
     if ((rc = this->NewPage(pageHandle))) {
+      RM_PrintError(rc, __LINE__, __FILE__);
       return rc;
     }
     if ((rc = pageHandle.GetPageNum(pageHasFree))) {
+      RM_PrintError(rc, __LINE__, __FILE__);
       return rc;
     }
     // insert the new page to the free list
@@ -105,11 +112,13 @@ RC RM_FileHandle::InsertRec(const char *pData, RID &rid) {
     this->hdrChange = TRUE;
   } else {
     if ((rc = this->GetPage(pageHasFree, pageHandle))) {
+      RM_PrintError(rc, __LINE__, __FILE__);
       return rc;
     }
   }
   RID newRid(pageHasFree, INVALID_SLOT);
   if ((rc = pageHandle.InsertRecord(pData, newRid))) {
+    RM_PrintError(rc, __LINE__, __FILE__);
     return rc;
   }
   rid = newRid;
@@ -119,10 +128,11 @@ RC RM_FileHandle::InsertRec(const char *pData, RID &rid) {
     this->hdrChange = TRUE;
     pageHandle.phdr->nextHasFree = INVALID_PAGE;
   }
-  if ((rc = this->pffh.MarkDirty(pageHasFree))) {
+  if ((rc = this->pffh.MarkDirty(this->GetRealPageNum(pageHasFree)))) {
+    RM_PrintError(rc, __LINE__, __FILE__);
     return rc;
   }
-  return pffh.UnpinPage(pageHasFree);
+  return pffh.UnpinPage(this->GetRealPageNum(pageHasFree));
 }
 
 RC RM_FileHandle::DeleteRec(const RID &rid) {
@@ -176,6 +186,9 @@ RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
 }
 
 RC RM_FileHandle::ForcePages(PageNum pageNum) {
+  if (pageNum == ALL_PAGES) {
+    return this->pffh.ForcePages(ALL_PAGES);
+  }
   return this->pffh.ForcePages(this->GetRealPageNum(pageNum));
 }
 
@@ -198,18 +211,25 @@ RC RM_FileHandle::GetPage(const PF_PageHandle& pfPageHandle, RM_PageHandle &rmPa
   PageNum realPageNum;
   char* pWholeData;
   if ((rc = pfPageHandle.GetData(pWholeData))) {
+    PF_PrintError(rc);
     return rc;
   }
+  std::cerr << "The page's data " << (void*)pWholeData << std::endl;
   if ((rc = pfPageHandle.GetPageNum(realPageNum))) {
     return rc;
   }
+  std::cout << "the real page to use " << realPageNum << std::endl;
   rmPageHandle.phdr = (RM_PageHdr*)pWholeData;
   // we save 1 char extra for bitmap, 1 record should have 1 bit
-  rmPageHandle.slotsPerPage = (PF_PAGE_SIZE - sizeof(RM_PageHdr) - 1)  * CHAR_BYTE_SIZE
-      / (1 + this->hdr.recordSize * CHAR_BYTE_SIZE);
+  rmPageHandle.slotsPerPage = (PF_PAGE_SIZE - sizeof(RM_PageHdr) - 1) * CHAR_BIT_SIZE
+      / (1 + this->hdr.recordSize * CHAR_BIT_SIZE);
+  std::cerr << "Slots per page " << rmPageHandle.slotsPerPage << std::endl;
+
   rmPageHandle.bitmap = pWholeData + sizeof(RM_PageHdr);
   rmPageHandle.bitmapLen =
-      (rmPageHandle.slotsPerPage + CHAR_BYTE_SIZE - 1) / CHAR_BYTE_SIZE;
+      (rmPageHandle.slotsPerPage + CHAR_BIT_SIZE - 1) / CHAR_BIT_SIZE;
+
+  std::cerr << "bitmap length " << rmPageHandle.bitmapLen << std::endl;
   rmPageHandle.pData = pWholeData + sizeof(RM_PageHdr) + rmPageHandle.bitmapLen;
   rmPageHandle.pageNum = this->GetLogicPageNum(realPageNum);
   rmPageHandle.recordSize = this->hdr.recordSize;
@@ -220,14 +240,18 @@ RC RM_FileHandle::NewPage(RM_PageHandle &pageHandle) {
   RC rc;
   PF_PageHandle pfPageHandle;
   if ((rc = this->pffh.AllocatePage(pfPageHandle))) {
+    PF_PrintError(rc);
     return rc;
   }
-  RM_PageHandle rmPageHandle;
-  if ((rc = this->GetPage(pfPageHandle, rmPageHandle))) {
+  if ((rc = this->GetPage(pfPageHandle, pageHandle))) {
+    PF_PrintError(rc);
     return rc;
   }
+  std::cout << "new page's num " << pageHandle.pageNum << std::endl;
+  std::cout << "clear bitmap " << (void*)pageHandle.bitmap << std::endl;
   // initialize the new page
   memset((void*)pageHandle.bitmap, 0, pageHandle.bitmapLen);
+  std::cout << "bit map cleared" << std::endl;
   pageHandle.phdr->nextHasFree = INVALID_PAGE;
   pageHandle.phdr->slotCount = 0;
   return 0;

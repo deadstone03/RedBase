@@ -9,14 +9,16 @@ const int RECORD_SIZE = 8;
 class RM_FileHandleTest: public ::testing::Test {
    protected:
     virtual void SetUp() {
-      pfManager_ = PF_Manager();
-      pfManager_.CreateFile(FILE_NAME);
-      pfManager_.OpenFile(FILE_NAME, pfFileHandle_);
-      RM_FileHdr fileHdr;
-      fileHdr.hdrPageNum = 0;
-      fileHdr.recordSize = RECORD_SIZE;
-      fileHdr.firstFree = INVALID_PAGE;
-      rmFileHandle_ = RM_FileHandle(fileHdr, FALSE, pfFileHandle_);
+    pfManager_.CreateFile(FILE_NAME);
+    pfManager_.OpenFile(FILE_NAME, pfFileHandle_);
+    PF_PageHandle pfPageHandle;
+    // use the first page as rm file hdr
+    pfFileHandle_.AllocatePage(pfPageHandle);
+    RM_FileHdr fileHdr;
+    fileHdr.hdrPageNum = 0;
+    fileHdr.recordSize = RECORD_SIZE;
+    fileHdr.firstFree = INVALID_PAGE;
+    rmFileHandle_ = RM_FileHandle(fileHdr, FALSE, pfFileHandle_);
     }
 
     virtual void TearDown() {
@@ -33,8 +35,14 @@ TEST_F(RM_FileHandleTest, InsertRec) {
   memset(pData, 2, RECORD_SIZE);
   RID rid;
   RC rc = rmFileHandle_.InsertRec(pData, rid);
+  RM_PrintError(rc, __LINE__, __FILE__);
   EXPECT_EQ(0, rc);
   PageNum pageNum;
   SlotNum slotNum;
   rc = rid.GetPageNum(pageNum);
+  EXPECT_EQ(0, rc);
+  EXPECT_EQ(0, pageNum);
+  rc = rid.GetSlotNum(slotNum);
+  EXPECT_EQ(0, rc);
+  EXPECT_EQ(0, slotNum);
 }
