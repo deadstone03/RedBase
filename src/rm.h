@@ -105,8 +105,14 @@ class RM_FileHandle {
   friend class RM_FileScan;
   friend class RM_Manager;
 public:
-    RM_FileHandle ();
+    RM_FileHandle();
+    RM_FileHandle(const RM_FileHdr& fileHdr,
+                  int hdrChange,
+                  PF_FileHandle pffh);
     ~RM_FileHandle();
+    RM_FileHandle(const RM_FileHandle& other);
+
+    RM_FileHandle* operator=(const RM_FileHandle& other);
 
     // Given a RID, return the record
     RC GetRec     (const RID &rid, RM_Record &rec) const;
@@ -125,6 +131,8 @@ private:
     RC NewPage(RM_PageHandle &pageHandle);
     RC GetNextRec(const RID &rid, RM_Record &rec) const;
     PageNum GetRealPageNum(const PageNum pageNum) const;
+    PageNum GetLogicPageNum(const PageNum pageNum) const;
+
     RM_FileHdr hdr;
     int hdrChange;
     PF_FileHandle pffh;

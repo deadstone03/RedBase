@@ -8,6 +8,24 @@ RM_FileHandle::RM_FileHandle() {
 RM_FileHandle::~RM_FileHandle() {
 }
 
+RM_FileHandle::RM_FileHandle(const RM_FileHdr& fileHdr,
+                             int hdrChange,
+                             PF_FileHandle pffh)
+:hdr(fileHdr), hdrChange(hdrChange), pffh(pffh) {
+}
+
+RM_FileHandle::RM_FileHandle(const RM_FileHandle& other)
+:hdr(other.hdr), hdrChange(other.hdrChange), pffh(other.pffh) {
+
+}
+
+RM_FileHandle* RM_FileHandle::operator=(const RM_FileHandle& other) {
+  this->hdr = other.hdr;
+  this->hdrChange = other.hdrChange;
+  this->pffh = other.pffh;
+  return this;
+}
+
 // Get a record from the file.
 // The record will have a copy of data.
 RC RM_FileHandle::GetRec(const RID &rid, RM_Record &rec) const {
@@ -66,6 +84,9 @@ RC RM_FileHandle::GetNextRec(const RID &rid, RM_Record &rec) const {
   return rc;
 }
 
+// insert a record
+// in: pData
+// out: rid
 RC RM_FileHandle::InsertRec(const char *pData, RID &rid) {
   RC rc;
   PageNum pageHasFree = this->hdr.firstFree;
@@ -125,10 +146,10 @@ RC RM_FileHandle::DeleteRec(const RID &rid) {
     this->hdr.firstFree = pageNum;
     this->hdrChange = TRUE;
   }
-  if ((rc = this->pffh.MarkDirty(pageNum))) {
+  if ((rc = this->pffh.MarkDirty(this->GetRealPageNum(pageNum)))) {
     return rc;
   }
-  return this->pffh.UnpinPage(pageNum);
+  return this->pffh.UnpinPage(this->GetRealPageNum(pageNum));
 }
 
 RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
@@ -148,21 +169,21 @@ RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
   if ((rc = pageHandle.UpdateRecord(rec))) {
     return rc;
   }
-  if ((rc = this->pffh.MarkDirty(pageNum))) {
+  if ((rc = this->pffh.MarkDirty(this->GetRealPageNum(pageNum)))) {
     return rc;
   }
-  return this->pffh.UnpinPage(pageNum);
+  return this->pffh.UnpinPage(this->GetRealPageNum(pageNum));
 }
 
 RC RM_FileHandle::ForcePages(PageNum pageNum) {
-  return this->pffh.ForcePages(pageNum);
+  return this->pffh.ForcePages(this->GetRealPageNum(pageNum));
 }
 
 RC RM_FileHandle::GetPage(const PageNum &pageNum, RM_PageHandle& pageHandle) const {
   RC rc;
   PF_PageHandle pfph;
   // get the pf page
-  if ((rc = pffh.GetThisPage(pageNum, pfph))) {
+  if ((rc = pffh.GetThisPage(this->GetRealPageNum(pageNum), pfph))) {
     return rc;
   }
   if ((rc = this->GetPage(pfph, pageHandle))) {
@@ -174,12 +195,12 @@ RC RM_FileHandle::GetPage(const PageNum &pageNum, RM_PageHandle& pageHandle) con
 //get a rm pagehandle from a pf page handle
 RC RM_FileHandle::GetPage(const PF_PageHandle& pfPageHandle, RM_PageHandle &rmPageHandle) const {
   RC rc;
-  PageNum pageNum;
+  PageNum realPageNum;
   char* pWholeData;
   if ((rc = pfPageHandle.GetData(pWholeData))) {
     return rc;
   }
-  if ((rc = pfPageHandle.GetPageNum(pageNum))) {
+  if ((rc = pfPageHandle.GetPageNum(realPageNum))) {
     return rc;
   }
   rmPageHandle.phdr = (RM_PageHdr*)pWholeData;
@@ -190,7 +211,7 @@ RC RM_FileHandle::GetPage(const PF_PageHandle& pfPageHandle, RM_PageHandle &rmPa
   rmPageHandle.bitmapLen =
       (rmPageHandle.slotsPerPage + CHAR_BYTE_SIZE - 1) / CHAR_BYTE_SIZE;
   rmPageHandle.pData = pWholeData + sizeof(RM_PageHdr) + rmPageHandle.bitmapLen;
-  rmPageHandle.pageNum = pageNum;
+  rmPageHandle.pageNum = this->GetLogicPageNum(realPageNum);
   rmPageHandle.recordSize = this->hdr.recordSize;
   return 0;
 }
@@ -215,4 +236,8 @@ RC RM_FileHandle::NewPage(RM_PageHandle &pageHandle) {
 // the first page to store record starts from head page + 1
 PageNum RM_FileHandle::GetRealPageNum(const PageNum pageNum) const {
   return this->hdr.hdrPageNum + 1 + pageNum;
+}
+
+PageNum RM_FileHandle::GetLogicPageNum(const PageNum pageNum) const {
+  return pageNum - 1 - this->hdr.hdrPageNum;
 }

@@ -5,21 +5,18 @@
 const PageNum PAGE_NUM = 1;
 const int SLOTS_PER_PAGE = 10;
 const int RECORD_SIZE = 8;
+const int BITMAP_LEN = (SLOTS_PER_PAGE + CHAR_BYTE_SIZE - 1) / CHAR_BYTE_SIZE * CHAR_BYTE_SIZE;
+const int WHOLE_DATA_LEN = sizeof(RM_PageHdr) + BITMAP_LEN + SLOTS_PER_PAGE * RECORD_SIZE;
+char* const P_WHOLE_DATA = new char[WHOLE_DATA_LEN];
 
 RM_PageHandle CreateTestRM_PageHandle() {
-  PageNum pageNum = PAGE_NUM;
-  int slotsPerPage = SLOTS_PER_PAGE;
-  int bitmapLen = (slotsPerPage + CHAR_BYTE_SIZE - 1) / CHAR_BYTE_SIZE * CHAR_BYTE_SIZE;
-  int recordSize = RECORD_SIZE;
-  int wholeDataLen = sizeof(RM_PageHdr) + bitmapLen + slotsPerPage * recordSize;
-  char* pWholeData = new char[wholeDataLen];
-  memset(pWholeData, 0, wholeDataLen);
-  RM_PageHdr* phdr = (RM_PageHdr*)pWholeData;
-  char* bitmap = pWholeData + sizeof(RM_PageHdr);
-  char* pData = bitmap + bitmapLen;
+  memset(P_WHOLE_DATA, 0, WHOLE_DATA_LEN);
+  RM_PageHdr* phdr = (RM_PageHdr*)P_WHOLE_DATA;
+  char* bitmap =  P_WHOLE_DATA + sizeof(RM_PageHdr);
+  char* pData = bitmap + BITMAP_LEN;
   return RM_PageHandle(
-      pageNum, phdr, bitmap, bitmapLen,
-      pData, slotsPerPage, recordSize);
+      PAGE_NUM, phdr, bitmap, BITMAP_LEN,
+      pData, SLOTS_PER_PAGE, RECORD_SIZE);
 }
 
 TEST(RM_PageHandle, CreateRM_PageHandle) {
@@ -48,7 +45,6 @@ void InsertTestRecord(RM_PageHandle & pageHandle, int recordNum) {
 TEST(RM_PageHandle, InsertRecord) {
   RM_PageHandle rmPageHandle = CreateTestRM_PageHandle();
   InsertTestRecord(rmPageHandle, 9);
-
   RID rid;
   RC rc;
   char* pData = new char[RECORD_SIZE];
@@ -63,6 +59,8 @@ TEST(RM_PageHandle, InsertRecord) {
   rc = rid.GetSlotNum(slotNum);
   EXPECT_EQ(0, rc);
   EXPECT_EQ(9, slotNum);
+  RM_PageHdr* hdr = (RM_PageHdr*)P_WHOLE_DATA;
+  EXPECT_EQ(10, hdr->slotCount);
 }
 
 TEST(RM_PageHandle, InsertRecord_noSlot) {
@@ -129,6 +127,8 @@ TEST(RM_PageHandle, DeleteRecord) {
 
   rc = rmPageHandle.GetRecord(2, record);
   EXPECT_EQ(RM_INVALID_SLOT, rc);
+  RM_PageHdr* hdr = (RM_PageHdr*)P_WHOLE_DATA;
+  EXPECT_EQ(4, hdr->slotCount);
 }
 
 TEST(RM_PageHandle, DeleteRecord_invalidSlot) {
