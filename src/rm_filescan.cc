@@ -15,7 +15,7 @@ RC RM_FileScan::OpenScan(const RM_FileHandle &fileHandle,
                          CompOp     compOp,
                          void       *value,
                          ClientHint pinHint) {
-  this->fileHandle = fileHandle; // this is not right?
+  this->fileHandle = fileHandle; // this is right but very bad style.
   this->attrType = attrType;
   this->attrLength = attrLength;
   this->attrOffset = attrOffset;
@@ -28,21 +28,25 @@ RC RM_FileScan::OpenScan(const RM_FileHandle &fileHandle,
   }
 
   this->pinHint = pinHint;
+  this->curRID = RID(0, INVALID_SLOT);
   return 0;
 }
 
 
 RC RM_FileScan::GetNextRec(RM_Record &rec) {
   RC rc;
-  // rec leak memory;
   while (!(rc = this->fileHandle.GetNextRec(this->curRID, rec))) {
     int check;
     if ((rc = this->CheckRecord(rec, check))) {
+      RM_PrintError(rc, __LINE__, __FILE__);
       return rc;
     }
     if (check) {
       return rec.GetRid(this->curRID);
     }
+  }
+  if (rc) {
+    RM_PrintError(rc, __LINE__, __FILE__);
   }
   return rc;
 }

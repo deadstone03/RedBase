@@ -57,9 +57,12 @@ RC RM_FileHandle::GetNextRec(const RID &rid, RM_Record &rec) const {
   SlotNum slotNum;
   RC rc;
   if ((rc = rid.GetPageNum(pageNum))) {
+    RM_PrintError(rc, __LINE__, __FILE__);
     return rc;
   }
-  if ((rc = rid.GetSlotNum(slotNum))) {
+  if ((rc = rid.GetSlotNum(slotNum))
+      && rc != RM_RID_NOTINIT) {
+    RM_PrintError(rc, __LINE__, __FILE__);
     return rc;
   }
   PF_PageHandle pfPageHandle;

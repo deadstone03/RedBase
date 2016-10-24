@@ -3,7 +3,7 @@
 #include "rm.h"
 #include <iostream>
 
-const char* FILE_NAME = {"test_file_name1"};
+const char* FILE_NAME = {"test_file_name"};
 const int RECORD_SIZE = 8;
 
 

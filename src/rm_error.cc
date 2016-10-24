@@ -8,6 +8,8 @@ void RM_PrintError(RC rc, unsigned int line, const char* filename) {
   }
 
   switch(rc) {
+    case RM_RID_NOTINIT:
+      std::cerr << filename << " " << line << ":" << "RID not init" << std::endl; break;
     case RM_RECORD_NOTINIT:
       std::cerr << filename << " " << line << ":" << "RM record not init." << std::endl; break;
     case RM_PAGE_NOTINIT:
@@ -22,5 +24,7 @@ void RM_PrintError(RC rc, unsigned int line, const char* filename) {
       std::cerr << filename << " " << line << ":" << "Page has no more record." << std::endl; break;
     case RM_EOF:
       std::cerr << filename << " " << line << ":" << "No more record." << std::endl; break;
+    default:
+      std::cerr << filename << " " << line << ":" << rc << " unknown" << std::endl; break;
   }
 }
