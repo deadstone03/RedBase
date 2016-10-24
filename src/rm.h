@@ -174,7 +174,10 @@ private:
 class RM_Manager {
 public:
     RM_Manager    (PF_Manager &pfm);
+    RM_Manager    ();
     ~RM_Manager   ();
+
+    RM_Manager* operator=(const RM_Manager& other);
 
     RC CreateFile (const char *fileName, int recordSize);
     RC DestroyFile(const char *fileName);
@@ -183,11 +186,11 @@ public:
     RC CloseFile  (RM_FileHandle &fileHandle);
 
 private:
-    RC GetFileHdr(const PF_FileHandle& pfFileHandle,
+    RC GetFileHdr(PF_FileHandle& pfFileHandle,
                   RM_FileHdr &rmFileHdr) const;
     RC WriteFileHdr(const PF_FileHandle& pfFileHandle,
                     const RM_FileHdr &rmFileHdr) const;
-    PF_Manager pfm;
+    PF_Manager* ppfm;
 };
 
 //

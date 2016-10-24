@@ -52,7 +52,7 @@ QL_SOURCES     = #ql_manager_stub.cc
 UTILS_SOURCES  = #dbcreate.cc dbdestroy.cc redbase.cc
 PARSER_SOURCES = #scan.c parse.c nodes.c interp.c
 #TESTER_SOURCES = pf_test1.cc pf_test2.cc pf_test3.cc #rm_test.cc ix_test.cc parser_test.cc
-TESTER_SOURCES = rm_rid_test.cc rm_record_test.cc rm_pagehandle_test.cc rm_filehandle_test.cc
+TESTER_SOURCES = rm_rid_test.cc rm_record_test.cc rm_pagehandle_test.cc rm_filehandle_test.cc rm_manager_test.cc
 
 # Builds gtest.a and gtest_main.a.
 
