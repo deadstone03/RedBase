@@ -1,6 +1,7 @@
 #include "rm.h"
 #include "rm_internal.h"
-#include<cstring>
+#include <cstring>
+#include <iostream>
 
 RM_PageHandle::RM_PageHandle() {
 }
@@ -61,7 +62,11 @@ RC RM_PageHandle::GetRecord(const SlotNum& slotNum, RM_Record &record) const {
 RC RM_PageHandle::GetNextRecord(const SlotNum &slotNum, RM_Record &record) const {
   for (SlotNum i = slotNum + 1; this->IsValidSlotNum(i); ++i) {
     if (this->IsValidSlot(i)) {
-      return this->GetRecord(i, record);
+      RC rc = this->GetRecord(i, record);
+      if (rc) {
+        RM_PrintError(rc, __LINE__, __FILE__);
+      }
+      return rc;
     }
   }
   return RM_PAGE_EOF;

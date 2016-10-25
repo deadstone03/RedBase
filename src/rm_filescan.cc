@@ -29,24 +29,23 @@ RC RM_FileScan::OpenScan(const RM_FileHandle &fileHandle,
 
   this->pinHint = pinHint;
   this->curRID = RID(0, INVALID_SLOT);
-  return 0;
-}
+  return 0; }
 
 
 RC RM_FileScan::GetNextRec(RM_Record &rec) {
   RC rc;
   while (!(rc = this->fileHandle.GetNextRec(this->curRID, rec))) {
     int check;
+    if ((rc = rec.GetRid(this->curRID))) {
+      return rc;
+    }
     if ((rc = this->CheckRecord(rec, check))) {
       RM_PrintError(rc, __LINE__, __FILE__);
       return rc;
     }
     if (check) {
-      return rec.GetRid(this->curRID);
+      return 0;
     }
-  }
-  if (rc) {
-    RM_PrintError(rc, __LINE__, __FILE__);
   }
   return rc;
 }
@@ -63,12 +62,12 @@ RC RM_FileScan::CheckRecord(const RM_Record &rec, int &check) const {
   }
   void* pVal = (void*)(pData + this->attrOffset);
   switch(this->compOp) {
-    case EQ_OP: check = (this->Compare(this->value, pVal) == 0); break;
-    case LT_OP: check = (this->Compare(this->value, pVal) < 0); break;
-    case GT_OP: check = (this->Compare(this->value, pVal) > 0); break;
-    case LE_OP: check = (this->Compare(this->value, pVal) <= 0); break;
-    case GE_OP: check = (this->Compare(this->value, pVal) >= 0); break;
-    case NE_OP: check = (this->Compare(this->value, pVal) != 0); break;
+    case EQ_OP: check = (this->Compare(pVal, this->value) == 0); break;
+    case LT_OP: check = (this->Compare(pVal, this->value) < 0); break;
+    case GT_OP: check = (this->Compare(pVal, this->value) > 0); break;
+    case LE_OP: check = (this->Compare(pVal, this->value) <= 0); break;
+    case GE_OP: check = (this->Compare(pVal, this->value) >= 0); break;
+    case NE_OP: check = (this->Compare(pVal, this->value) != 0); break;
     case NO_OP: check = TRUE; break;
   }
   return 0;

@@ -161,7 +161,7 @@ private:
 //
 // Print-error function and PF return code defines
 //
-void PF_PrintError(RC rc);
+void PF_PrintError(RC rc, unsigned int line = -1,const char* filename=(char*)"unknow file");
 
 #define PF_PAGEPINNED      (START_PF_WARN + 0) // page pinned in buffer
 #define PF_PAGENOTINBUF    (START_PF_WARN + 1) // page isn't pinned in buffer

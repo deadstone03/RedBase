@@ -48,8 +48,9 @@ static char *PF_ErrorMsg[] = {
 //       Assumes PF_UNIX is last valid PF return code
 // In:   rc - return code for which a message is desired
 //
-void PF_PrintError(RC rc)
+void PF_PrintError(RC rc, unsigned int line, const char* filename)
 {
+  cerr << filename << " " << line << ":";
   // Check the return code is within proper limits
   if (rc >= START_PF_WARN && rc <= PF_LASTWARN)
     // Print warning

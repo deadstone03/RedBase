@@ -26,7 +26,8 @@ RID& RID::operator=(const RID &other) {
 
 RC RID::GetPageNum(PageNum &pageNum) const {
     if (this->pageNum == INVALID_PAGE) {
-        return RM_RID_NOTINIT;
+      pageNum = INVALID_PAGE;
+      return RM_RID_NOTINIT;
     }
 
     pageNum = this->pageNum;
@@ -36,7 +37,8 @@ RC RID::GetPageNum(PageNum &pageNum) const {
 
 RC RID::GetSlotNum(SlotNum &slotNum) const {
     if (this->slotNum == INVALID_SLOT) {
-        return RM_RID_NOTINIT;
+      slotNum = INVALID_SLOT;
+      return RM_RID_NOTINIT;
     }
 
     slotNum = this->slotNum;

@@ -1,7 +1,6 @@
 #include <cstring>
 #include "rm.h"
 #include "rm_internal.h"
-#include <iostream>
 
 RM_FileHandle::RM_FileHandle() {
 }
@@ -70,23 +69,37 @@ RC RM_FileHandle::GetNextRec(const RID &rid, RM_Record &rec) const {
       this->GetRealPageNum(pageNum - 1), pfPageHandle))) {
     RM_PageHandle rmPageHandle;
     if ((rc = this->GetPage(pfPageHandle, rmPageHandle))) {
+      RM_PrintError(rc, __LINE__, __FILE__);
       return rc;
     }
-    if ((rc = rmPageHandle.GetNextRecord(slotNum, rec)
-         && rc != RM_PAGE_EOF)) {
+    if ((rc = rmPageHandle.GetPageNum(pageNum))) {
+      RM_PrintError(rc, __LINE__, __FILE__);
       return rc;
     }
-    if ((rc = this->pffh.UnpinPage(this->GetRealPageNum(pageNum)))) {
+    if ((rc = rmPageHandle.GetNextRecord(slotNum, rec))
+         && rc != RM_PAGE_EOF) {
+      RM_PrintError(rc, __LINE__, __FILE__);
       return rc;
+    }
+
+    RC unPinRc;
+    if ((unPinRc = this->pffh.UnpinPage(this->GetRealPageNum(pageNum)))) {
+      RM_PrintError(unPinRc, __LINE__, __FILE__);
+      return unPinRc;
     }
     if (!rc) {
       // find one;
       return 0;
     }
-    pageNum += 1;
+    // every time a new page begin, we need to scan from the first slot.
+    pageNum++;
+    slotNum = INVALID_SLOT;
   }
   if (rc == PF_EOF) {
     return RM_EOF;
+  }
+  if (rc) {
+    RM_PrintError(rc, __LINE__, __FILE__);
   }
   return rc;
 }
