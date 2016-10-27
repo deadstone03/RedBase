@@ -1,18 +1,23 @@
 #ifndef IX_H
 #define IX_H
-
 #include "redbase.h"
 #include "pf.h"
 #include "rm_rid.h"
+#include "ix_internal.h"
 
 
 class IX_IndexHandle {
+  friend class IX_Manager;
+  friend class IX_IndexScan;
   public:
        IX_IndexHandle  ();                             // Constructor
        ~IX_IndexHandle ();                             // Destructor
     RC InsertEntry     (void *pData, const RID &rid);  // Insert new index entry
     RC DeleteEntry     (void *pData, const RID &rid);  // Delete index entry
     RC ForcePages      ();                             // Copy index to disk
+  private:
+    IX_FileHdr hdr;
+    int hdrChange;
 };
 
 
@@ -43,8 +48,13 @@ class IX_Manager {
                      int        indexNo,
                      IX_IndexHandle &indexHandle);
     RC CloseIndex   (IX_IndexHandle &indexHandle);  // Close index
+  private:
+    PF_Manager* ppfm;
 };
 
+#define START_IX_WARN  201
+#define END_IX_WARN    300
+#define IX_LASTWARN 0
 
-void IX_PrintError (RC rc);
+void IX_PrintError (RC rc, unsigned int line, const char* filename);
 #endif
