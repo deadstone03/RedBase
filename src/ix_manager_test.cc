@@ -24,17 +24,17 @@ class IX_ManagerTest: public ::testing::Test {
     PF_Manager pfManager_;
 
     IX_FileHdr GetFileHdr() {
-      PF_FileHandle pfFilehandle;
-      EXPECT_EQ(0, pfManager_.OpenFile(IX_FILE_NAME, pfFilehandle));
+      PF_FileHandle pfFileHand;
+      EXPECT_EQ(0, pfManager_.OpenFile(IX_FILE_NAME, pfFileHand));
       PF_PageHandle pfPageHandle;
-      EXPECT_EQ(0, pfFilehandle.GetFirstPage(pfPageHandle));
+      EXPECT_EQ(0, pfFileHand.GetFirstPage(pfPageHandle));
       char* pData;
       EXPECT_EQ(0, pfPageHandle.GetData(pData));
       IX_FileHdr fileHdr;
       memcpy(&fileHdr, pData, sizeof(IX_FileHdr));
 
-      EXPECT_EQ(0, pfFilehandle.UnpinPage(0));
-      EXPECT_EQ(0, pfManager_.CloseFile(pfFilehandle));
+      EXPECT_EQ(0, pfFileHand.UnpinPage(0));
+      EXPECT_EQ(0, pfManager_.CloseFile(pfFileHand));
       return fileHdr;
     }
 };

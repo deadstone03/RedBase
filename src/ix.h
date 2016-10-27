@@ -18,6 +18,7 @@ class IX_IndexHandle {
   private:
     IX_FileHdr hdr;
     int hdrChange;
+    PF_FileHandle pffh;
 };
 
 
@@ -49,6 +50,8 @@ class IX_Manager {
                      IX_IndexHandle &indexHandle);
     RC CloseIndex   (IX_IndexHandle &indexHandle);  // Close index
   private:
+    RC WriteHdr(const IX_FileHdr &hdr, PF_FileHandle &pfFileHand);
+    RC ReadHdr(const PF_FileHandle &pfFileHand, IX_FileHdr &hdr) const;
     PF_Manager* ppfm;
 };
 
