@@ -8,9 +8,16 @@ struct IX_FileHdr {
   AttrType attrType;
   int attrLength;
   PageNum root;
+  int slotSize;  // the size of the slot attrLength + sizeof(RID);
+  int m;  // the m value for B tree;
 };
 
 struct IX_PageHdr {
+  PageNum parent;
+  PageNum  sibling;
+  int isLeaf;
+  int isRoot;
+  int slotCount;
 };
 
 char* IndexName(const char *filename, const int indexNo);

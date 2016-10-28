@@ -5,6 +5,16 @@
 #include "rm_rid.h"
 #include "ix_internal.h"
 
+class IX_PageHandle {
+  friend class IX_IndexHandle;
+  public:
+      IX_PageHandle();
+      ~IX_PageHandle();
+      RC InsertEntry(void *pData, const RID &rid);
+      RC DeleteEntry(void *pData, const RID &rid);
+      RC Split(IX_PageHandle *ixPageHandle);
+};
+
 
 class IX_IndexHandle {
   friend class IX_Manager;

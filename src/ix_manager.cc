@@ -43,6 +43,8 @@ RC IX_Manager::CreateIndex(const char *filename,
   fileHdr.attrType = attrType;
   fileHdr.attrLength = attrLength;
   fileHdr.root = INVALID_PAGE;
+  fileHdr.slotSize = attrLength + sizeof(RID);
+  fileHdr.m = (PF_PAGE_SIZE - sizeof(IX_PageHdr)) / fileHdr.slotSize;
 
   if ((rc = this->WriteHdr(fileHdr, pfFileHandle))) {
     goto CreateIndexErrorHandle;

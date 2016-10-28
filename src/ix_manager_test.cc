@@ -44,4 +44,7 @@ TEST_F(IX_ManagerTest, CreateIndex) {
   EXPECT_EQ(INT, fileHdr.attrType);
   EXPECT_EQ(ATTR_LENGTH, fileHdr.attrLength);
   EXPECT_EQ(INVALID_PAGE, fileHdr.root);
+  EXPECT_EQ(sizeof(int) + sizeof(RID), fileHdr.slotSize);
+  EXPECT_EQ((PF_PAGE_SIZE - sizeof(IX_PageHdr)) / fileHdr.slotSize,
+            fileHdr.m);
 }
