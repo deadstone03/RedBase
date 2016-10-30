@@ -5,6 +5,7 @@
 #include "rm_rid.h"
 #include "ix_internal.h"
 
+class IX_IndexHandle;
 class IX_PageHandle {
   friend class IX_IndexHandle;
   public:
@@ -13,6 +14,10 @@ class IX_PageHandle {
       RC InsertEntry(void *pData, const RID &rid);
       RC DeleteEntry(void *pData, const RID &rid);
       RC Split(IX_PageHandle *ixPageHandle);
+      RC GetData(char* &pData);
+  private:
+      IX_PageHdr* phdr;
+      char* pData;
 };
 
 
@@ -26,6 +31,9 @@ class IX_IndexHandle {
     RC DeleteEntry     (void *pData, const RID &rid);  // Delete index entry
     RC ForcePages      ();                             // Copy index to disk
   private:
+    RC GetPageHandle(const PF_PageHandle& pfPageHandle,
+                     IX_PageHandle& ixPageHandle);
+    RC DoInsertEntry(void *pData, const RID &rid, IX_PageHandle& ixPageHandle);
     IX_FileHdr hdr;
     int hdrChange;
     PF_FileHandle pffh;
