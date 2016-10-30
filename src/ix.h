@@ -8,74 +8,74 @@
 class IX_IndexHandle;
 class IX_PageHandle {
   friend class IX_IndexHandle;
-  public:
-      IX_PageHandle();
-      ~IX_PageHandle();
-      RC InsertEntry(void *pData, const RID &rid);
-      RC DeleteEntry(void *pData, const RID &rid);
-      RC Split(IX_PageHandle *ixPageHandle);
-      RC GetData(char* &pData);
-  private:
-      IX_PageHdr* phdr;
-      char* pData;
+public:
+  IX_PageHandle();
+  ~IX_PageHandle();
+  RC InsertEntry(void *pData, const RID &rid);
+  RC DeleteEntry(void *pData, const RID &rid);
+  RC Split(IX_PageHandle *ixPageHandle);
+  RC GetData(char* &pData);
+private:
+  IX_PageHdr* phdr;
+  char* pData;
 };
 
 
 class IX_IndexHandle {
   friend class IX_Manager;
   friend class IX_IndexScan;
-  public:
-       IX_IndexHandle  ();                             // Constructor
-       ~IX_IndexHandle ();                             // Destructor
-    RC InsertEntry     (void *pData, const RID &rid);  // Insert new index entry
-    RC DeleteEntry     (void *pData, const RID &rid);  // Delete index entry
-    RC ForcePages      ();                             // Copy index to disk
-  private:
-    RC GetPageHandle(const PF_PageHandle& pfPageHandle,
-                     IX_PageHandle& ixPageHandle);
-    RC DoInsertEntry(void *pData, const RID &rid, IX_PageHandle& ixPageHandle);
-    IX_FileHdr hdr;
-    int hdrChange;
-    PF_FileHandle pffh;
+public:
+  IX_IndexHandle  ();                             // Constructor
+  ~IX_IndexHandle ();                             // Destructor
+  RC InsertEntry     (void *pData, const RID &rid);  // Insert new index entry
+  RC DeleteEntry     (void *pData, const RID &rid);  // Delete index entry
+  RC ForcePages      ();                             // Copy index to disk
+private:
+  RC GetPageHandle(const PF_PageHandle& pfPageHandle,
+                   IX_PageHandle& ixPageHandle);
+  RC DoInsertEntry(void *pData, const RID &rid, PageNum &pageNum, void* pNewData, RID &newRid);
+  IX_FileHdr hdr;
+  int hdrChange;
+  PF_FileHandle pffh;
 };
 
 
 class IX_IndexScan {
-  public:
-       IX_IndexScan  ();                                 // Constructor
-       ~IX_IndexScan ();                                 // Destructor
-    RC OpenScan      (const IX_IndexHandle &indexHandle, // Initialize index scan
-                      CompOp      compOp,
-                      void        *value,
-                      ClientHint  pinHint = NO_HINT);
-    RC GetNextEntry  (RID &rid);                         // Get next matching entry
-    RC CloseScan     ();                                 // Terminate index scan
+public:
+  IX_IndexScan  ();                                 // Constructor
+  ~IX_IndexScan ();                                 // Destructor
+  RC OpenScan      (const IX_IndexHandle &indexHandle, // Initialize index scan
+                    CompOp      compOp,
+                    void        *value,
+                    ClientHint  pinHint = NO_HINT);
+  RC GetNextEntry  (RID &rid);                         // Get next matching entry
+  RC CloseScan     ();                                 // Terminate index scan
 };
 
 
 class IX_Manager {
-  public:
-       IX_Manager   (PF_Manager &pfm);              // Constructor
-       ~IX_Manager  ();                             // Destructor
-    RC CreateIndex  (const char *fileName,          // Create new index
-                     int        indexNo,
-                     AttrType   attrType,
-                     int        attrLength);
-    RC DestroyIndex (const char *fileName,          // Destroy index
-                     int        indexNo);
-    RC OpenIndex    (const char *fileName,          // Open index
-                     int        indexNo,
-                     IX_IndexHandle &indexHandle);
-    RC CloseIndex   (IX_IndexHandle &indexHandle);  // Close index
-  private:
-    RC WriteHdr(const IX_FileHdr &hdr, PF_FileHandle &pfFileHand);
-    RC ReadHdr(const PF_FileHandle &pfFileHand, IX_FileHdr &hdr) const;
-    PF_Manager* ppfm;
+public:
+  IX_Manager   (PF_Manager &pfm);              // Constructor
+  ~IX_Manager  ();                             // Destructor
+  RC CreateIndex  (const char *fileName,          // Create new index
+                   int        indexNo,
+                   AttrType   attrType,
+                   int        attrLength);
+  RC DestroyIndex (const char *fileName,          // Destroy index
+                   int        indexNo);
+  RC OpenIndex    (const char *fileName,          // Open index
+                   int        indexNo,
+                   IX_IndexHandle &indexHandle);
+  RC CloseIndex   (IX_IndexHandle &indexHandle);  // Close index
+private:
+  RC WriteHdr(const IX_FileHdr &hdr, PF_FileHandle &pfFileHand);
+  RC ReadHdr(const PF_FileHandle &pfFileHand, IX_FileHdr &hdr) const;
+  PF_Manager* ppfm;
 };
 
 #define START_IX_WARN  201
-#define END_IX_WARN    300
-#define IX_LASTWARN 0
+#define IX_PAGE_SPLITTED ((START_IX_WARN) + 1)
+#define IX_LASTWARN IX_PAGE_SPLITTED
 
 void IX_PrintError (RC rc, unsigned int line, const char* filename);
 #endif

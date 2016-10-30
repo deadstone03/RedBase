@@ -14,12 +14,13 @@ struct IX_FileHdr {
 
 struct IX_PageHdr {
   PageNum parent;
-  PageNum  sibling;
+  PageNum sibling;
   int isLeaf;
   int isRoot;
   int slotCount;
 };
 
 char* IndexName(const char *filename, const int indexNo);
+int compare(void* pL, void* pR, AttrType attrType, int attrLength);
 
 #endif
