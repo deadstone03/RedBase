@@ -47,6 +47,10 @@ RC IX_IndexHandle::DoInsertEntry(void *pData, const RID &rid, PageNum &pageNum, 
   RC rc;
   PF_PageHandle pfPageHandle;
   IX_PageHandle ixPageHandle;
+  void* pLeftLastData = NULL;
+  RID leftLastRid;
+  void* pNextData = NULL;
+  RID nextRid;
   if ((rc = this->pffh.GetThisPage(pageNum, pfPageHandle))) {
     return rc;
   }
@@ -54,221 +58,82 @@ RC IX_IndexHandle::DoInsertEntry(void *pData, const RID &rid, PageNum &pageNum, 
     return rc;
   }
   if (ixPageHandle.phdr->isLeaf) {
-    // this page to insert is leaf
-    if (ixPageHandle.phdr->slotCount < this->hdr.m) {
-      // leaf has empty slot
-      char* pPageData;
-      if ((rc = ixPageHandle.GetData(pPageData))) {
-        return rc;
-      }
-      // move to the first empty slot
-      pPageData += (this->hdr.slotSize * ixPageHandle.phdr->slotCount);
-      memcpy(pPageData, pData, this->hdr.attrLength);
-      pPageData += this->hdr.attrLength;
-      memcpy(pPageData, &rid, sizeof(RID));
-      ixPageHandle.phdr->slotCount++;
-      if ((rc = this->pffh.MarkDirty(pageNum))) {
-        return rc;
-      }
-      if ((rc = this->pffh.UnpinPage(pageNum))) {
-        return rc;
-      }
-      return 0;
-    } else {
-      // leaf but there is no empty slot
-      PF_PageHandle newPfPageHandle;
-      IX_PageHandle newIxPageHandle;
-      if ((rc = this->pffh.AllocatePage(newPfPageHandle))) {
-        return rc;
-      }
-      PageNum newPageNum;
-      if ((rc = newPfPageHandle.GetPageNum(newPageNum))) {
-        return rc;
-      }
-      if ((rc = this->GetPageHandle(newPfPageHandle, newIxPageHandle))) {
-        return rc;
-      }
-      newIxPageHandle.phdr->isRoot = FALSE;
-      newIxPageHandle.phdr->sibling = ixPageHandle.phdr->sibling;
-      newIxPageHandle.phdr->isLeaf = TRUE;
-      newIxPageHandle.phdr->isRoot = FALSE;
-      int leftSize = (this->hdr.m + 1) / 2;
-      int rightSize = this->hdr.m - leftSize;
-      char* pLeftPageData;
-      char* pRightPageData;
-      if ((rc = ixPageHandle.GetData(pLeftPageData))) {
-        return rc;
-      }
-      if ((rc = newIxPageHandle.GetData(pRightPageData))) {
-        return rc;
-      }
-      memcpy(pRightPageData,
-             pLeftPageData + leftSize * this->hdr.slotSize,
-             rightSize * this->hdr.slotSize);
-      ixPageHandle.phdr->slotCount = leftSize;
-      ixPageHandle.phdr->sibling = newPageNum;
-      newIxPageHandle.phdr->slotCount = rightSize;
-
-      if ((rc = newIxPageHandle.GetData(pRightPageData))) {
-        return rc;
-      }
-      pNewData = new char[this->hdr.attrLength];
-      memcpy(pNewData, pRightPageData, this->hdr.attrLength);
-
-      if (compare(pData, pNewData, this->hdr.attrType, this->hdr.attrLength) < 0) {
-        ixPageHandle.InsertEntry(pData, rid);
-      } else {
-        newIxPageHandle.InsertEntry(pData, rid);
-      }
-      // probably the inserted one is the right smallest
-      memcpy(pNewData, pRightPageData, this->hdr.attrLength);
-      newRid = RID(newPageNum, INVALID_SLOT);
-      if ((rc = this->pffh.MarkDirty(pageNum))) {
-        return rc;
-      }
-      if ((rc = this->pffh.MarkDirty(newPageNum))) {
-        return rc;
-      }
-      if ((rc = this->pffh.UnpinPage(pageNum))) {
-        return rc;
-      }
-      if ((rc = this->pffh.UnpinPage(newPageNum))) {
-        return rc;
-      }
-      return IX_PAGE_SPLITTED;
-    }
-  } else {
-    // the page is internal, maybe root
-    char* pPageData;
-    if (( rc = ixPageHandle.GetData(pPageData))) {
+    if ((rc = ixPageHandle.InsertEntry(pData, rid))
+        && rc != IX_PAGE_FULL) {
       return rc;
     }
-
-    PageNum pageToInsert;
-    int i;
-    for (i = 0; i < ixPageHandle.phdr->slotCount - 1; ++i) {
-      char* pSlot = pPageData + this->hdr.slotSize * i;
-      if (compare(pData, pSlot, this->hdr.attrType, this->hdr.attrLength) < 0) {
-        RID rid = *(RID*)(pSlot + this->hdr.attrLength);
-        if ((rc = rid.GetPageNum(pageToInsert))) {
-          return rc;
-        }
-        break;
-      }
-    }
-    // the slot to insert is larger than all slots in this page
-    if (i == ixPageHandle.phdr->slotCount - 1) {
-      char* pSlot = pPageData + this->hdr.slotSize * i;
-      RID rid = *(RID*)(pSlot + this->hdr.attrLength);
-      if ((rc = rid.GetPageNum(pageToInsert))) {
-        return rc;
-      }
-    }
-
-    if ((rc = this->DoInsertEntry(
-        pData, rid, pageToInsert, pNewData, newRid))
-        && rc != IX_PAGE_SPLITTED) {
-      return rc;
-    }
+    // the page is full
     if (!rc) {
-      return this->pffh.UnpinPage(pageNum);
-    }
-    // pageSplited
-    if (ixPageHandle.phdr->slotCount < this->hdr.m) {
-      // node has empty slot
-      char* pPageData;
-      if ((rc = ixPageHandle.GetData(pPageData))) {
-        return rc;
-      }
-      // move to the first empty slot
-      pPageData += (this->hdr.slotSize * ixPageHandle.phdr->slotCount);
-      memcpy(pPageData, pData, this->hdr.attrLength);
-      pPageData += this->hdr.attrLength;
-      memcpy(pPageData, &rid, sizeof(RID));
-      ixPageHandle.phdr->slotCount++;
-      if ((rc = this->pffh.MarkDirty(pageNum))) {
-        return rc;
-      }
-      if ((rc = this->pffh.UnpinPage(pageNum))) {
-        return rc;
-      }
-      return 0;
-    } else if (ixPageHandle.phdr->isRoot) {
-    }
-    else {
-      // node but there is no empty slot
-      PF_PageHandle newPfPageHandle;
       IX_PageHandle newIxPageHandle;
+      PF_PageHandle newPfPageHandle;
+      PageNum newPageNum;
       if ((rc = this->pffh.AllocatePage(newPfPageHandle))) {
         return rc;
       }
-      PageNum newPageNum;
       if ((rc = newPfPageHandle.GetPageNum(newPageNum))) {
         return rc;
       }
       if ((rc = this->GetPageHandle(newPfPageHandle, newIxPageHandle))) {
         return rc;
       }
-      newIxPageHandle.phdr->isRoot = FALSE;
-      newIxPageHandle.phdr->sibling = ixPageHandle.phdr->sibling;
-      newIxPageHandle.phdr->isLeaf = TRUE;
-      newIxPageHandle.phdr->isRoot = FALSE;
-      int leftSize = (this->hdr.m + 1) / 2;
-      int rightSize = this->hdr.m - leftSize;
-      char* pLeftPageData;
-      char* pRightPageData;
-      if ((rc = ixPageHandle.GetData(pLeftPageData))) {
+      if ((rc = ixPageHandle.Split(newIxPageHandle))) {
         return rc;
       }
-      if ((rc = newIxPageHandle.GetData(pRightPageData))) {
-        return rc;
+      if ((rc = ixPageHandle.GetLastSlot(pLeftLastData, leftLastRid))) {
+        goto DoInsertEntryErrorHandle;
       }
-      memcpy(pRightPageData,
-             pLeftPageData + leftSize * this->hdr.slotSize,
-             rightSize * this->hdr.slotSize);
-      ixPageHandle.phdr->slotCount = leftSize;
-      ixPageHandle.phdr->sibling = newPageNum;
-      newIxPageHandle.phdr->slotCount = rightSize;
-
-      if ((rc = newIxPageHandle.GetData(pRightPageData))) {
-        return rc;
-      }
-      pNewData = new char[this->hdr.attrLength];
-      memcpy(pNewData, pRightPageData, this->hdr.attrLength);
-
-      if (compare(pData, pNewData, this->hdr.attrType, this->hdr.attrLength) < 0) {
-        ixPageHandle.InsertEntry(pData, rid);
+      if (compare(pLeftLastData, pData,
+                  this->hdr.attrType, this->hdr.attrLength) < 0) {
+        if((rc = newIxPageHandle.InsertEntry(pData, rid))) {
+          goto DoInsertEntryErrorHandle;
+        }
       } else {
-        newIxPageHandle.InsertEntry(pData, rid);
+        if ((rc = ixPageHandle.InsertEntry(pData, rid))) {
+          goto DoInsertEntryErrorHandle;
+        }
       }
-      // probably the inserted one is the right smallest
-      memcpy(pNewData, pRightPageData, this->hdr.attrLength);
-      newRid = RID(newPageNum, INVALID_SLOT);
-      if ((rc = this->pffh.MarkDirty(pageNum))) {
-        return rc;
+      if ((rc = newIxPageHandle.GetNextSlot(pLeftLastData, pNextData, nextRid))
+           && rc != IX_INVALID_SLOT) {
+        goto DoInsertEntryErrorHandle;
       }
-      if ((rc = this->pffh.MarkDirty(newPageNum))) {
-        return rc;
+      if (!rc) {
+        newRid = RID(newPageNum, IX_DUMMY);
+      } else {
+        newRid = RID(newPageNum, IX_NON_DUMMY);
       }
-      if ((rc = this->pffh.UnpinPage(pageNum))) {
-        return rc;
-      }
-      if ((rc = this->pffh.UnpinPage(newPageNum))) {
-        return rc;
-      }
-      return IX_PAGE_SPLITTED;
+      pNewData = pNextData;
+      rc = 0;
+      goto DoInsertEntryErrorHandle;
     }
   }
+
+
+DoInsertEntryErrorHandle:
+  if (pLeftLastData) {
+    delete (char*)pLeftLastData;
+    pLeftLastData = NULL;
+  }
+  return rc;
+
 }
 
 RC IX_IndexHandle::GetPageHandle(const PF_PageHandle& pfPageHandle,
                                  IX_PageHandle& ixPageHandle) {
   RC rc;
   char* pData;
+  PageNum pageNum;
   if ((rc = pfPageHandle.GetData(pData))) {
     return rc;
   }
+  if ((rc = pfPageHandle.GetPageNum(pageNum))) {
+    return rc;
+  }
+  ixPageHandle.pageNum = pageNum;
   ixPageHandle.phdr = (IX_PageHdr*)pData;
+  ixPageHandle.m = this->hdr.m;
+  ixPageHandle.attrType = this->hdr.attrType;
+  ixPageHandle.attrLength = this->hdr.attrLength;
+  ixPageHandle.slotSize = this->hdr.slotSize;
   ixPageHandle.pData = pData + sizeof(IX_PageHdr);
   return 0;
 }

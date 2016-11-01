@@ -3,6 +3,8 @@
 #include "redbase.h"
 #include "rm_rid.h"
 
+#define IX_DUMMY INVALID_SLOT
+
 // index's file hdr
 struct IX_FileHdr {
   AttrType attrType;

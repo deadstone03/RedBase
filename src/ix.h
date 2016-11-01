@@ -15,9 +15,21 @@ public:
   RC DeleteEntry(void *pData, const RID &rid);
   RC Split(IX_PageHandle *ixPageHandle);
   RC GetData(char* &pData);
+  RC GetPageNum(PageNum &pageNum);
 private:
+  int IsValidSlotNum(SlotNum slotNum) const;
+  RC SetThisSlot(const SlotNum slotNum, const void* pData, const RID &rid);
+  RC GetThisSlot(const SlotNum slotNum, void* &pData, RID &rid) const;
+  RC GetLastSlot(void* &pData, RID &rid) const;
+  RC GetNextSlot(const void* pData, void* &pNextData, RID &rid) const;
+  RC Split(IX_PageHandle &ixPageHandle);
   IX_PageHdr* phdr;
-  char* pData;
+  void* pData;
+  int slotSize;
+  AttrType attrType;
+  int attrLength;
+  int m;
+  PageNum pageNum;
 };
 
 
@@ -75,7 +87,10 @@ private:
 
 #define START_IX_WARN  201
 #define IX_PAGE_SPLITTED ((START_IX_WARN) + 1)
-#define IX_LASTWARN IX_PAGE_SPLITTED
+#define IX_PAGE_FULL ((START_IX_WARN) + 2)
+#define IX_INVALID_SLOTNUM ((START_IX_WARN) + 3)
+#define IX_INVALID_SLOT ((START_IX_WARN) + 4)
+#define IX_LASTWARN IX_INVALID_SLOT
 
 void IX_PrintError (RC rc, unsigned int line, const char* filename);
 #endif
